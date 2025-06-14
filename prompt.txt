@@ -1,0 +1,18 @@
+okay so after this...if we dont have to do anything in pipeline.py config.py data folder.
+
+if so
+then lets move to making the flask skeleton..and get this working in a the best way and the recommendation system
+
+we will use vector db,
+
+u r gonna teach me everything.
+
+
+now also note...
+
+that in backend we have to do more things as well:
+
+1. the backend will have 3 verticals. a. Recommendation system (which will be continuously connected to the frontend with a websocket when a person on frontend wants to start swiping. 
+the socket will connect getting a session id and username. the backend will take the userrname. find his stored embeddings...which were generated when he first signed up. 
+then run cosine similarity and send the frontend recommendation in a set of 20 20 people . 
+ ina json format with there 
