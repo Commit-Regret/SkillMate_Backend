@@ -1,4 +1,3 @@
-import os
 import random
 from flask import request
 from flask_socketio import emit
@@ -10,6 +9,7 @@ from app.utils.auth import validate_session
 from app.utils.embedding import get_similar_users
 from app.embeddings.model import encode_user_profile
 from app.embeddings.vector_db import search_similar
+
 
 def register_recommender_events(socketio):
     db = get_mongo_db()
@@ -46,30 +46,19 @@ def register_recommender_events(socketio):
         # Step 3: Query Vector DB
         similar_user_ids = search_similar(user_id, vector, exclude_ids=swiped_ids, limit=20)
 
-        # Step 4: Load available images
-        photo_dir = os.path.join("static", "photos")
-        try:
-            photo_files = [f for f in os.listdir(photo_dir) if f.lower().endswith((".jpg", ".jpeg", ".png"))]
-        except FileNotFoundError:
-            photo_files = []
-
-        if not photo_files:
-            emit("error", {"error": "No profile images found in /static/photos"})
-            return
-
-        # Step 5: Fetch similar users' profiles and assign random image
+        # Step 4: Fetch similar users' profiles and assign random online image
         users = db.users.find({"_id": {"$in": [ObjectId(uid) for uid in similar_user_ids]}})
         response = []
         for u in users:
-            random_photo = random.choice(photo_files)
-            photo_url = f"/static/photos/{random_photo}"
+            # Use random Lorem Picsum image
+            random_image_url = f"https://picsum.photos/seed/{random.randint(1, 9999)}/300/300"
 
             response.append({
                 "user_id": str(u["_id"]),
-                "profile": u.get("profile", {}) | {"photo_url": photo_url}
+                "profile": u.get("profile", {}) | {"photo_url": random_image_url}
             })
 
-        # Step 6: Emit recommendations
+        # Step 5: Emit recommendations
         emit("recommendations", {"users": response})
 
     @socketio.on("swipe")
