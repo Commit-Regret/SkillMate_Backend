@@ -29,9 +29,9 @@ register_recommender_events(socketio)
 register_chat_events(socketio)
 print("[BOOT] Sockets registered.")
 
-# @app.route("/running", methods=["POST"])
-# def running():
-#     return {"message": "Server is up and running"}, 200
-
+@app.route("/running", methods=["GET", "POST"])
+def running():
+    return {"message": "Server is up and running"}, 200
+    
 print("[BOOT] Starting server...")
-socketio.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=True)
+socketio.run(app, host="127.0.1.0", port=int(os.getenv("PORT", 5000)), debug=True)

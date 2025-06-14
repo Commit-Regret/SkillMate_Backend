@@ -3,9 +3,10 @@ from uuid import uuid4
 from datetime import datetime, timedelta
 from app.database import get_mongo_db
 
-db = get_mongo_db()
+
 
 def create_session(user_id):
+    db = get_mongo_db()
     session_id = str(uuid4())
     now = datetime.utcnow()
     session = {
@@ -18,4 +19,5 @@ def create_session(user_id):
     return session_id
 
 def invalidate_session(session_id):
+    db = get_mongo_db()
     db.sessions.delete_one({"session_id": session_id})

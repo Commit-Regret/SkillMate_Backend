@@ -3,14 +3,15 @@ from flask_cors import CORS
 from dotenv import load_dotenv
 import os
 
-from .database import init_mongo
+from app.database import init_mongo
 from .routes.auth import auth_bp
 # from .routes.genai import genai_bp
 from .routes.profile import profile_bp
 from .routes.auth import auth_bp
 from app.routes.user_routes import user_routes
+from app.database import db
 
-
+# from .database import init_mongo
 
 
 
@@ -55,6 +56,9 @@ def create_app():
 
     print(f"[{time.time()}] Initializing Mongo...")
     init_mongo(app)  # <--- likely slow
+    
+    from app.database import db  # <- re-import to get updated db
+    print("[CHECK] MongoDB collections:", db.list_collection_names())
 
     print(f"[{time.time()}] Registering Blueprints...")
     app.register_blueprint(auth_bp, url_prefix="/auth")
