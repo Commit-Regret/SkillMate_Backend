@@ -7,10 +7,10 @@ from app.utils.embedding import get_similar_users
 from app.embeddings.model import encode_user_profile
 from app.embeddings.vector_db import search_similar
 
-db = get_mongo_db()
+
 
 def register_recommender_events(socketio):
-
+    db = get_mongo_db()
     @socketio.on("connect")
     def handle_connect():
         print("User connected to WebSocket.")
@@ -85,6 +85,7 @@ def register_recommender_events(socketio):
         })
 
         if liked and mutual:
+            print("Shaadi karlo Plij")
             # Fetch minimal profile for both
             u1 = db.users.find_one({"_id": ObjectId(user_id)}, {"profile": 1})
             u2 = db.users.find_one({"_id": ObjectId(target_user_id)}, {"profile": 1})

@@ -9,7 +9,10 @@ def register_chat_events(socketio):
     @socketio.on("join_chat")
     def on_join_chat(data):
         user_id = data["user_id"]
-        other_user_id = data["other_user_id"]
+        name = data["other_user_id"]
+        other_user_id = mongo.db.users.find_one({"profile.name": name})
+        if not other_user_id:
+            return jsonify({"error": "User not found"}), 404
 
         # Ensure consistent participant order
         participants = sorted([user_id, other_user_id])
