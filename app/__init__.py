@@ -46,6 +46,7 @@ def create_app():
     print(f"[{time.time()}] Loading Flask app...")
 
     app = Flask(__name__)
+    # app.config["DEBUG"] = True
     app.config["MONGO_URI"] = os.getenv("MONGO_URI")
     app.config["SECRET_KEY"] = os.getenv("SECRET_KEY", "supersecret")
 

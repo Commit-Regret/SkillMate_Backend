@@ -1,9 +1,8 @@
 import os
+import time
 from flask_socketio import SocketIO
 from dotenv import load_dotenv
 from app import create_app
-
-import time
 
 load_dotenv()
 
@@ -14,7 +13,13 @@ print(f"[BOOT] App created in {time.time() - t1:.2f}s")
 
 print("[BOOT] Initializing SocketIO...")
 t2 = time.time()
-socketio = SocketIO(app, cors_allowed_origins="*", async_mode="eventlet")
+socketio = SocketIO(
+    app,
+    cors_allowed_origins="*",
+    async_mode="eventlet",  # Async server
+    logger=True,
+    engineio_logger=True
+)
 print(f"[BOOT] SocketIO initialized in {time.time() - t2:.2f}s")
 
 print("[BOOT] Registering sockets...")
@@ -24,5 +29,9 @@ register_recommender_events(socketio)
 register_chat_events(socketio)
 print("[BOOT] Sockets registered.")
 
+# @app.route("/running", methods=["POST"])
+# def running():
+#     return {"message": "Server is up and running"}, 200
+
 print("[BOOT] Starting server...")
-socketio.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
+socketio.run(app, host="0.0.0.0", port=int(os.getenv("PORT", 5000)), debug=True)
