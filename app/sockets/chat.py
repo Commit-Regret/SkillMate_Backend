@@ -1,44 +1,71 @@
-from flask_socketio import emit, join_room, leave_room
+
+from flask_socketio import emit, join_room
 from flask import request
-
-# Define your namespace or leave it default
-NAMESPACE = "/chat"
-
-# Dictionary to store messages temporarily (you'll likely store this in DB later)
-chat_history = {}
+from bson import ObjectId
+from datetime import datetime
+from app.database import mongo
 
 def register_chat_events(socketio):
-    @socketio.on("join_room", namespace=NAMESPACE)
-    def handle_join(data):
-        room = data["room"]
+    @socketio.on("join_chat")
+    def on_join_chat(data):
+        user_id = data["user_id"]
+        name = data["other_user_id"]
+        other_user_id = mongo.db.users.find_one({"profile.name": name})
+        if not other_user_id:
+            return jsonify({"error": "User not found"}), 404
+
+        # Ensure consistent participant order
+        participants = sorted([user_id, other_user_id])
+
+        # Search for existing conversation
+        conversation = mongo.db.conversations.find_one({
+            "participants": participants
+        })
+
+        # Create one if it doesn't exist
+        if not conversation:
+            conversation_id = mongo.db.conversations.insert_one({
+                "participants": participants
+            }).inserted_id
+        else:
+            conversation_id = conversation["_id"]
+
+        room = str(conversation_id)
         join_room(room)
-        emit("user_joined", {"room": room, "user": request.sid}, room=room)
+        emit("joined_chat", {"conversation_id": room}, room=room)
 
-    @socketio.on("leave_room", namespace=NAMESPACE)
-    def handle_leave(data):
-        room = data["room"]
-        leave_room(room)
-        emit("user_left", {"room": room, "user": request.sid}, room=room)
-
-    @socketio.on("send_message", namespace=NAMESPACE)
+    @socketio.on("send_message")
     def handle_send_message(data):
-        room = data["room"]
-        message = data["message"]
-        sender = data.get("sender", "anonymous")
+        conversation_id = data["conversation_id"]
+        sender_id = data["sender_id"]
+        content = data["content"]
 
-        # Save to in-memory chat history (replace with DB later)
-        if room not in chat_history:
-            chat_history[room] = []
-        chat_history[room].append({"sender": sender, "message": message})
+        message_doc = {
+            "conversation_id": ObjectId(conversation_id),
+            "sender_id": sender_id,
+            "content": content,
+            "timestamp": datetime.utcnow()
+        }
+
+        mongo.db.messages.insert_one(message_doc)
 
         emit("receive_message", {
-            "room": room,
-            "sender": sender,
-            "message": message
-        }, room=room)
+            "sender_id": sender_id,
+            "content": content,
+            "timestamp": message_doc["timestamp"].isoformat()
+        }, room=conversation_id)
 
-    @socketio.on("typing", namespace=NAMESPACE)
-    def handle_typing(data):
-        room = data["room"]
-        user = data.get("user", "anonymous")
-        emit("user_typing", {"room": room, "user": user}, room=room)
+    @socketio.on("fetch_messages")
+    def handle_fetch_messages(data):
+        conversation_id = data["conversation_id"]
+        messages = mongo.db.messages.find({
+            "conversation_id": ObjectId(conversation_id)
+        }).sort("timestamp", 1)
+
+        messages_list = [{
+            "sender_id": msg["sender_id"],
+            "content": msg["content"],
+            "timestamp": msg["timestamp"].isoformat()
+        } for msg in messages]
+
+        emit("chat_history", messages_list)

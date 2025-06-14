@@ -8,6 +8,7 @@ from .routes.auth import auth_bp
 # from .routes.genai import genai_bp
 from .routes.profile import profile_bp
 from .routes.auth import auth_bp
+from .models.chat import chat_bp
 from app.routes.user_routes import user_routes
 from app.database import db
 
@@ -63,6 +64,7 @@ def create_app():
     print(f"[{time.time()}] Registering Blueprints...")
     app.register_blueprint(auth_bp, url_prefix="/auth")
     app.register_blueprint(profile_bp, url_prefix="/profile")
+    app.register_blueprint(chat_bp, url_prefix="/chat")
     app.register_blueprint(user_routes)
 
     print(f"[{time.time()}] App ready.")
