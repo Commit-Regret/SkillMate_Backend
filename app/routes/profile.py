@@ -21,8 +21,20 @@ def update_profile():
         return jsonify({"error": "Name and year are required"}), 400
 
     success = update_user_profile(user_id, name, year, techstack)
+    updated_user = db.users.find_one({"_id": ObjectId(user_id)})
+    embedding = generate_embedding_from_user(updated_user)
+    
+    # Push to Qdrant
+    qdrant_client.upsert(
+        collection_name="users",
+        points=[{
+            "id": user_id,
+            "vector": embedding,
+            "payload": {"user_id": user_id}
+        }]
+    )
     if success:
-        return jsonify({"message": "Profile updated successfully"})
+        return jsonify({"message": "Profile updated successfully"}), 200
     return jsonify({"error": "Update failed"}), 500
 
 @profile_bp.route("/me", methods=["GET"])

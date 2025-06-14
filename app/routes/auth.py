@@ -23,6 +23,7 @@ def signup():
     password_hash = generate_password_hash(password)
     user_id = create_user(email, password_hash)
     session_id = create_session(user_id)
+    print(session_id)
 
     return jsonify({"session_id": session_id, "user_id": user_id})
 
