@@ -1,18 +1,26 @@
 
 from flask_socketio import emit, join_room
-from flask import request
+from flask import request, jsonify
 from bson import ObjectId
 from datetime import datetime
 from app.database import mongo
+from app.database import get_mongo_db
 
 def register_chat_events(socketio):
+    print("✅ register_chat_events CALLED")
+    db = get_mongo_db()
     @socketio.on("join_chat")
     def on_join_chat(data):
+        print("hello")
         user_id = data["user_id"]
         name = data["other_user_id"]
-        other_user_id = mongo.db.users.find_one({"profile.name": name})
-        if not other_user_id:
-            return jsonify({"error": "User not found"}), 404
+        print("hello2")
+        other_user = mongo.db.users.find_one({"profile.name": name})
+        if not other_user:
+            emit("error", {"error": "User not found"})
+            return
+        print("hello3")
+        other_user_id = str(other_user["_id"])
 
         # Ensure consistent participant order
         participants = sorted([user_id, other_user_id])
@@ -32,7 +40,7 @@ def register_chat_events(socketio):
 
         room = str(conversation_id)
         join_room(room)
-        emit("joined_chat", {"conversation_id": room}, room=room)
+        emit("joined_chat", {"conversation_id": room})
 
     @socketio.on("send_message")
     def handle_send_message(data):
