@@ -1,16 +1,16 @@
-from flask_socketio import emit
+import os
+import random
+from flask import request
 from bson import ObjectId
 from datetime import datetime
 from app.database import get_mongo_db
-from app.utils.auth import validate_session
-from app.utils.embedding import get_similar_users
-from app.embeddings.model import encode_user_profile
-from app.embeddings.vector_db import search_similar
-
-
+from app.auth import validate_session
+from app.vector import encode_user_profile, search_similar
+from flask_socketio import emit
 
 def register_recommender_events(socketio):
     db = get_mongo_db()
+
     @socketio.on("connect")
     def handle_connect():
         print("User connected to WebSocket.")
@@ -43,16 +43,26 @@ def register_recommender_events(socketio):
         # Step 3: Query Vector DB
         similar_user_ids = search_similar(user_id, vector, exclude_ids=swiped_ids, limit=20)
 
-        # Step 4: Fetch those users' profiles
+        # Step 4: Load available photos
+        photo_dir = os.path.join("static", "photos")
+        photo_files = [f for f in os.listdir(photo_dir) if f.lower().endswith((".jpg", ".jpeg", ".png"))]
+        if not photo_files:
+            emit("error", {"error": "No photos found in /static/photos"})
+            return
+
+        # Step 5: Fetch those users' profiles
         users = db.users.find({"_id": {"$in": [ObjectId(uid) for uid in similar_user_ids]}})
         response = []
         for u in users:
+            random_photo = random.choice(photo_files)
+            photo_url = f"/static/photos/{random_photo}"
+
             response.append({
                 "user_id": str(u["_id"]),
-                "profile": u.get("profile", {})
+                "profile": u.get("profile", {}) | {"photo_url": photo_url}
             })
 
-        # Step 5: Emit via WebSocket
+        # Step 6: Emit via WebSocket
         emit("recommendations", {"users": response})
 
     @socketio.on("swipe")
@@ -77,7 +87,7 @@ def register_recommender_events(socketio):
             "timestamp": datetime.utcnow()
         })
 
-        # Check for match (did target also like this user?)
+        # Check for mutual like
         mutual = db.swipes.find_one({
             "swiper_id": ObjectId(target_user_id),
             "swipee_id": ObjectId(user_id),
@@ -86,7 +96,6 @@ def register_recommender_events(socketio):
 
         if liked and mutual:
             print("Shaadi karlo Plij")
-            # Fetch minimal profile for both
             u1 = db.users.find_one({"_id": ObjectId(user_id)}, {"profile": 1})
             u2 = db.users.find_one({"_id": ObjectId(target_user_id)}, {"profile": 1})
 
@@ -96,6 +105,5 @@ def register_recommender_events(socketio):
             # Send match alert to both
             emit("match", {"with": u2_profile}, to=request.sid)
 
-            # Store match room or notify frontend to create one
             match_room = f"{min(user_id, target_user_id)}_{max(user_id, target_user_id)}"
             socketio.emit("match", {"with": u1_profile}, to=match_room)
