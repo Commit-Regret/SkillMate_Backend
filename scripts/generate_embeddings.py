@@ -14,7 +14,8 @@ from qdrant_client.http.models import PointStruct, VectorParams, Distance
 from qdrant_client.http.exceptions import UnexpectedResponse
 import hdbscan
 import umap
-
+from datetime import datetime
+from werkzeug.security import generate_password_hash
 # -----------------------------
 # 📦 INIT: Connections
 # -----------------------------
@@ -89,20 +90,26 @@ def generate_user():
     chosen_photo = random.choice(dummy_photos)
     new_filename = f"{uuid.uuid4()}.jpg"
     shutil.copy(os.path.join(ASSET_PHOTO_DIR, chosen_photo), os.path.join(STATIC_PHOTO_DIR, new_filename))
-    return {
-        "profile": {
-            "name": fake.first_name(),
-            "year": random.choice(["1st", "2nd", "3rd", "4th"]),
-            "techstack": random.choice(techstacks),
-            "photo_url": f"/static/photos/{new_filename}"
-        }
+    
+    profile = {
+        "name": fake.first_name(),
+        "year": random.choice(["1st", "2nd", "3rd", "4th"]),
+        "techstack": random.choice(techstacks),
+        "photo_url": f"/static/photos/{new_filename}"
     }
+
+    user = {
+        "email": fake.email(),
+        "password": generate_password_hash("password123"),  # You can randomize if needed
+        "oauth_provider": None,
+        "profile": profile,
+        "created_at": datetime.now()
+    }
+
+    return user
 
 users = [generate_user() for _ in range(1000)]
 
-# -----------------------------
-# 💾 Insert into MongoDB + Qdrant
-# -----------------------------
 vectors = []
 user_ids = []
 
@@ -117,10 +124,10 @@ for user in users:
     vectors.append(vec)
     user_ids.append(uid)
 
-    qdrant_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(uid)))  # Valid UUID format
+    qdrant_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(uid)))  # deterministic UUID
 
     try:
-        response = qdrant.upsert(
+        qdrant.upsert(
             collection_name=collection_name,
             points=[
                 PointStruct(
@@ -139,6 +146,7 @@ for user in users:
         print(f"[OK] Inserted user {uid} into Qdrant")
     except Exception as e:
         print(f"[ERROR] Failed to insert user {uid}: {e}")
+
 
 # -----------------------------
 # 📊 Improved Clustering + UMAP
