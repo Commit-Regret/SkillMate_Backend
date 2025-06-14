@@ -1,3 +1,4 @@
+import os
 import random
 from flask import request
 from flask_socketio import emit
@@ -6,10 +7,8 @@ from datetime import datetime
 
 from app.database import get_mongo_db
 from app.utils.auth import validate_session
-from app.utils.embedding import get_similar_users
 from app.embeddings.model import encode_user_profile
 from app.embeddings.vector_db import search_similar
-
 
 def register_recommender_events(socketio):
     db = get_mongo_db()
@@ -36,7 +35,7 @@ def register_recommender_events(socketio):
             emit("error", {"error": "Incomplete profile"})
             return
 
-        # Step 1: Generate user vector
+        # Step 1: Generate vector
         vector = encode_user_profile(profile)
 
         # Step 2: Get already swiped users
@@ -46,19 +45,43 @@ def register_recommender_events(socketio):
         # Step 3: Query Vector DB
         similar_user_ids = search_similar(user_id, vector, exclude_ids=swiped_ids, limit=20)
 
-        # Step 4: Fetch similar users' profiles and assign random online image
+        # Step 4: Fetch those users' profiles and assign random online image
         users = db.users.find({"_id": {"$in": [ObjectId(uid) for uid in similar_user_ids]}})
         response = []
         for u in users:
-            # Use random Lorem Picsum image
-            random_image_url = f"https://picsum.photos/seed/{random.randint(1, 9999)}/300/300"
-
+            photo_url = f"https://picsum.photos/seed/{str(u['_id'])}/300/300"
             response.append({
                 "user_id": str(u["_id"]),
-                "profile": u.get("profile", {}) | {"photo_url": random_image_url}
+                "profile": u.get("profile", {}) | {"photo_url": photo_url}
             })
 
-        # Step 5: Emit recommendations
+        # Step 5: Inject two hardcoded profiles for testing
+        hardcoded_profiles = [
+            {
+                "user_id": "684d899e2352fbe3f30d279f",
+                "profile": {
+                    "name": "Shreyans",
+                    "year": "1st",
+                    "techstack": ["MongoDB", "Node.js", "Machine Learning"],
+                    "photo_url": "https://picsum.photos/seed/shreyans123/300/300"
+                }
+            },
+            {
+                "user_id": "684d89a710af1f07c43efc1e",
+                "profile": {
+                    "name": "Hari",
+                    "year": "1st",
+                    "techstack": ["Python", "Flask", "React", "MongoDB", "Node.js"],
+                    "photo_url": "https://picsum.photos/seed/hari456/300/300"
+                }
+            }
+        ]
+
+        # Insert the hardcoded profiles somewhere in the middle
+        mid_index = len(response) // 2
+        response[mid_index:mid_index] = hardcoded_profiles
+
+        # Step 6: Emit recommendations
         emit("recommendations", {"users": response})
 
     @socketio.on("swipe")
@@ -83,7 +106,7 @@ def register_recommender_events(socketio):
             "timestamp": datetime.utcnow()
         })
 
-        # Check if mutual match
+        # Check for mutual match
         mutual = db.swipes.find_one({
             "swiper_id": ObjectId(target_user_id),
             "swipee_id": ObjectId(user_id),
@@ -98,8 +121,7 @@ def register_recommender_events(socketio):
             u1_profile = u1.get("profile", {}) | {"user_id": user_id}
             u2_profile = u2.get("profile", {}) | {"user_id": target_user_id}
 
-            # Send match event to both
+            # Notify both users
             emit("match", {"with": u2_profile}, to=request.sid)
-
             match_room = f"{min(user_id, target_user_id)}_{max(user_id, target_user_id)}"
             socketio.emit("match", {"with": u1_profile}, to=match_room)
