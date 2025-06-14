@@ -2,10 +2,15 @@ from flask import Blueprint, request, jsonify
 from bson import ObjectId
 from app.database import mongo
 
+from app.database import mongo
+from app.database import get_mongo_db
+
 chat_bp = Blueprint("chat", __name__)
 
-@chat_bp.route("/chat/overview", methods=["POST"])
+@chat_bp.route("/overview", methods=["POST"])
 def chat_overview():
+    db = get_mongo_db()
+    print(db)
     data = request.json
     user_id = data.get("user_id")
     if not user_id:
@@ -15,9 +20,11 @@ def chat_overview():
 
     # Find conversations where this user is a participant
     conversations = mongo.db.conversations.find({"participants": user_obj_id})
-
+    print("conaofwj")
+    print(conversations)
     overview = []
 
+    print("hi")
     for convo in conversations:
         convo_id = convo["_id"]
         participants = convo["participants"]
@@ -37,6 +44,7 @@ def chat_overview():
             "last_message": last_msg["content"] if last_msg else "",
             "timestamp": last_msg["timestamp"].isoformat() if last_msg else ""
         })
+        print("bye")
 
     # Sort by latest timestamp descending
     overview.sort(key=lambda x: x["timestamp"], reverse=True)
