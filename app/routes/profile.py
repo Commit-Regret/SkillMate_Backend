@@ -2,11 +2,15 @@
 from flask import Blueprint, request, jsonify
 from app.models.user import update_user_profile, get_user_profile
 from app.utils.auth import validate_session
+from app.database import get_mongo_db
+from bson import ObjectId
+from app.utils.embedding import generate_embedding_from_user
 
 profile_bp = Blueprint("profile", __name__)
 
 @profile_bp.route("/update", methods=["POST"])
 def update_profile():
+    db = get_mongo_db()
     session_id = request.headers.get("X-Session-ID")
     user_id = validate_session(session_id)
     if not user_id:
