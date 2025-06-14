@@ -5,6 +5,11 @@ from app.utils.auth import validate_session
 from app.database import get_mongo_db
 from bson import ObjectId
 from app.utils.embedding import generate_embedding_from_user
+from qdrant_client import QdrantClient
+from qdrant_client.http import models as qmodels
+import uuid
+
+qdrant_client = QdrantClient("localhost", port=6333)
 
 profile_bp = Blueprint("profile", __name__)
 
@@ -26,16 +31,19 @@ def update_profile():
 
     success = update_user_profile(user_id, name, year, techstack)
     updated_user = db.users.find_one({"_id": ObjectId(user_id)})
+    print(updated_user)
     embedding = generate_embedding_from_user(updated_user)
     
-    # Push to Qdrant
+    point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, str(user_id)))
     qdrant_client.upsert(
-        collection_name="users",
-        points=[{
-            "id": user_id,
-            "vector": embedding,
-            "payload": {"user_id": user_id}
-        }]
+        collection_name="skillmate_users",
+        points=[
+            qmodels.PointStruct(
+                id=point_id,
+                vector=embedding,
+                payload={"user_id": str(user_id)}
+            )
+        ]
     )
     if success:
         return jsonify({"message": "Profile updated successfully"}), 200

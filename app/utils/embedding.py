@@ -22,8 +22,10 @@ def generate_embedding_from_user(user_profile):
     Returns:
         list[float]: The 384D embedding
     """
-    year = str(user_profile.get("year", ""))
-    techstack = user_profile.get("techstack", [])
+    profile = user_profile.get("profile", {})
+    year = str(profile.get("year", ""))
+    techstack = profile.get("techstack", [])
+
     
     if not techstack:
         raise ValueError("Techstack missing from profile")
