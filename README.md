@@ -209,28 +209,7 @@ You can add GitHub Actions to:
 
 ---
 
-## 🛣 Roadmap
-
-- [x] Basic vector-based matching
-- [x] Dummy image & photo handling
-- [x] Real-time WebSocket chat
-- [x] AI Assistant + Gemini API
-- [x] Flowchart generation support
-- [x] Dockerized + seeding support
-- [ ] Auth + JWT
-- [ ] OAuth login (GitHub/Google)
-- [ ] Save AI conversations to DB
-- [ ] Team formation and scoring
-- [ ] Fully responsive frontend
-
 ---
 
-## 📬 Contact
-
-- ✉️ Email: `hari@gmail.com`
-- 💬 Raise an [issue](https://github.com/yourusername/skillmate/issues)
-- 🤝 Contributions welcome via PR
-
----
 
 > ⚡ Built with passion to connect developers, by developers.
