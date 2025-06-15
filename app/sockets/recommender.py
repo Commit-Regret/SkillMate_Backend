@@ -58,24 +58,25 @@ def register_recommender_events(socketio):
         # Step 5: Inject two hardcoded profiles for testing
         hardcoded_profiles = [
             {
-                "user_id": "684d899e2352fbe3f30d279f",
+                "user_id": "684edb8c596c226fcc5000ae",
                 "profile": {
                     "name": "Shreyans",
                     "year": "1st",
-                    "techstack": ["MongoDB", "Node.js", "Machine Learning"],
+                    "techstack": ["Python", "Flask", "MongoDB"],
                     "photo_url": "https://picsum.photos/seed/shreyans123/300/300"
                 }
             },
             {
-                "user_id": "684d89a710af1f07c43efc1e",
+                "user_id": "684edb53596c226fcc50009d",
                 "profile": {
-                    "name": "Hari",
+                    "name": "hari",
                     "year": "1st",
-                    "techstack": ["Python", "Flask", "React", "MongoDB", "Node.js"],
+                    "techstack": ["Python", "Flask", "MongoDB"],
                     "photo_url": "https://picsum.photos/seed/hari456/300/300"
                 }
             }
         ]
+
 
         # Insert the hardcoded profiles somewhere in the middle
         mid_index = len(response) // 2

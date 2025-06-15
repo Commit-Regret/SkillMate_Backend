@@ -1,0 +1,47 @@
+version: "3.9"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: skillmate-backend
+    ports:
+      - "5000:5000"
+    volumes:
+      - .:/app  # Optional: live code editing (disable in prod)
+    environment:
+      MODEL_PROVIDER: ${MODEL_PROVIDER}
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      MONGO_URI: ${MONGO_URI}
+      MONGO_DB: ${MONGO_DB}
+      SECRET_KEY: ${SECRET_KEY}
+      QDRANT_HOST: ${QDRANT_HOST}
+      QDRANT_PORT: ${QDRANT_PORT}
+    depends_on:
+      - mongo
+      - qdrant
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:6.0
+    container_name: skillmate-mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: skillmate-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+
+volumes:
+  mongo-data:
+  qdrant-data:
+
