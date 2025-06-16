@@ -19,12 +19,13 @@ def chat_overview():
     # Don't convert to ObjectId, because participants are strings
     conversations = db.conversations.find({"participants": user_id})
     overview = []
-
+    print(conversations)
     for convo in conversations:
         convo_id = convo["_id"]
         participants = convo["participants"]
-
+        print(participants)
         other_user_id = next(pid for pid in participants if pid != user_id)
+        print(other_user_id)
         other_user = db.users.find_one({"_id": ObjectId(other_user_id)})
 
         # Get latest message
